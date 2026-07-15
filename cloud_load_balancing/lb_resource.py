@@ -7,8 +7,9 @@ from datetime import datetime
 try:
     from google.cloud import compute_v1
 except ImportError:
-    print("Missing required library. Run: pip install google-cloud-compute")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-compute')
+    from google.cloud import compute_v1
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
@@ -29,18 +30,25 @@ def audit_load_balancing(project_id):
                 region = group[0].replace("zones/", "").replace("regions/", "")
                 for fr in group[1].forwarding_rules:
                     fr_count += 1
+                    def get_fr_field(obj, *names):
+                        for n in names:
+                            try:
+                                return getattr(obj, n)
+                            except Exception:
+                                continue
+                        return ""
                     writer.writerow([
                         fr.name,
                         region,
-                        fr.ip_address,
-                        fr.ip_protocol,
-                        fr.port_range,
+                        get_fr_field(fr, 'ip_address', 'IPAddress'),
+                        get_fr_field(fr, 'ip_protocol', 'IPProtocol'),
+                        get_fr_field(fr, 'port_range', 'portRange'),
                         fr.target,
-                        fr.load_balancing_scheme,
-                        fr.network_tier,
+                        get_fr_field(fr, 'load_balancing_scheme', 'loadBalancingScheme'),
+                        get_fr_field(fr, 'network_tier', 'networkTier'),
                         fr.network.split("/")[-1] if fr.network else "",
                         fr.subnetwork.split("/")[-1] if fr.subnetwork else "",
-                        fr.allow_global_access,
+                        get_fr_field(fr, 'allow_global_access', 'allowGlobalAccess'),
                         fr.description,
                     ])
         except Exception as e:
@@ -59,8 +67,16 @@ def audit_load_balancing(project_id):
                 region = group[0].replace("zones/", "").replace("regions/", "")
                 for bs in group[1].backend_services:
                     bs_count += 1
+                    def get_bs_field(obj, *names):
+                        for n in names:
+                            try:
+                                return getattr(obj, n)
+                            except Exception:
+                                continue
+                        return []
                     hcs = ", ".join(bs.health_checks) if bs.health_checks else ""
-                    backends = "; ".join([f"{b.group.split('/')[-1]}" for b in bs.backend]) if bs.backend else ""
+                    backends_field = get_bs_field(bs, 'backend', 'backends')
+                    backends = "; ".join([f"{b.group.split('/')[-1]}" for b in backends_field]) if backends_field else ""
                     writer.writerow([
                         bs.name,
                         region if region != "global" else "Global",
@@ -147,14 +163,23 @@ def audit_load_balancing(project_id):
                 region = group[0].replace("zones/", "").replace("regions/", "")
                 for cert in group[1].ssl_certificates:
                     ssl_count += 1
+                    def get_cert_field(obj, *names):
+                        for n in names:
+                            try:
+                                v = getattr(obj, n)
+                                if v is not None:
+                                    return v
+                            except Exception:
+                                continue
+                        return ""
                     writer.writerow([
                         cert.name,
-                        cert.type_,
+                        get_cert_field(cert, 'type_', 'type'),
                         region if region != "global" else "Global",
-                        cert.subject_common_name,
-                        ", ".join(cert.subject_alternative_names) if cert.subject_alternative_names else "",
+                        get_cert_field(cert, 'subject_common_name', 'subject', 'subjectAlternativeNames'),
+                        ", ".join(cert.subject_alternative_names) if get_cert_field(cert, 'subject_alternative_names', 'subjectAlternativeNames') else "",
                         cert.expire_time.strftime("%Y-%m-%d %H:%M:%S") if cert.expire_time else "",
-                        cert.issuer,
+                        get_cert_field(cert, 'issuer', 'Issuer'),
                     ])
         except Exception as e:
             print(f"  Error listing SSL certificates: {e}")

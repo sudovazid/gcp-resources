@@ -7,8 +7,10 @@ try:
     from googleapiclient import discovery
     import google.auth
 except ImportError:
-    print("❌ Error: Missing required libraries. Please run: pip install google-api-python-client google-auth")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-api-python-client google-auth')
+    from googleapiclient import discovery
+    import google.auth
 
 # Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"
@@ -32,20 +34,27 @@ def audit_scheduler(project_id):
         print(f"❌ Error initializing Cloud Scheduler client: {e}")
         return
 
-    parent = f"projects/{project_id}/locations/-"
     jobs_csv = f"{project_id}_cloud_scheduler_jobs_audit.csv"
     jobs_list = []
 
     print(f"\n[1/1] Scanning Cloud Scheduler Jobs...")
 
     try:
-        request = client.projects().locations().jobs().list(parent=parent)
-        while request is not None:
-            response = request.execute()
-            jobs_list.extend(response.get('jobs', []))
-            request = client.projects().locations().jobs().list_next(request, response)
-    except Exception as e:
-        print(f"⚠️ Error or access denied listing Cloud Scheduler Jobs: {e}")
+        locations_list = client.projects().locations().list(parent=f"projects/{project_id}").execute()
+        valid_locations = [loc['locationId'] for loc in locations_list.get('locations', [])]
+    except Exception:
+        valid_locations = ['us-central1', 'us-east1', 'us-west1', 'europe-west1', 'europe-west2', 'asia-east1', 'asia-northeast1']
+
+    for loc in valid_locations:
+        try:
+            parent = f"projects/{project_id}/locations/{loc}"
+            request = client.projects().locations().jobs().list(parent=parent)
+            while request is not None:
+                response = request.execute()
+                jobs_list.extend(response.get('jobs', []))
+                request = client.projects().locations().jobs().list_next(request, response)
+        except Exception:
+            pass
 
     print(f"\n{'Job ID':<25} | {'Location':<12} | {'State':<8} | {'Schedule':<12} | {'Target Type':<12} | {'Last Attempt status'}")
     print("-" * 105)

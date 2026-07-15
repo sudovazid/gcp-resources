@@ -152,7 +152,7 @@ def audit_cloud_run(project_id):
 
     dm_csv_file = f"{project_id}_cloudrun_domain_mappings_audit.csv"
     command = [
-        "gcloud", "run", "domain-mappings", "list",
+        "gcloud", "beta", "run", "domain-mappings", "list",
         f"--project={project_id}",
         "--format=csv(DOMAIN,SERVICE,REGION)"
     ]

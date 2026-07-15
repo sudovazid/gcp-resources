@@ -2,7 +2,12 @@ import os
 import sys
 import warnings
 import csv
-from google.cloud import dialogflowcx_v3
+try:
+    from google.cloud import dialogflowcx_v3
+except ImportError:
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-dialogflow-cx')
+    from google.cloud import dialogflowcx_v3
 
 # 1. Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"

@@ -8,8 +8,10 @@ try:
     from google.cloud import datacatalog_v1
     from google.api_core import exceptions
 except ImportError:
-    print("Missing required library. Run: pip install google-cloud-datacatalog")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-datacatalog')
+    from google.cloud import datacatalog_v1
+    from google.api_core import exceptions
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"

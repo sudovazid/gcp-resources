@@ -7,8 +7,9 @@ from datetime import datetime
 try:
     from google.cloud import compute_v1
 except ImportError:
-    print("Missing required library. Run: pip install google-cloud-compute")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-compute')
+    from google.cloud import compute_v1
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
@@ -41,6 +42,13 @@ def audit_nat(project_id):
                             source_ranges = []
                             if nat.source_subnetwork_ip_ranges_to_nat:
                                 source_ranges = [r.name if hasattr(r, "name") else str(r) for r in nat.source_subnetwork_ip_ranges_to_nat]
+                            def get_nat_field(obj, *names):
+                                for n in names:
+                                    try:
+                                        return getattr(obj, n)
+                                    except Exception:
+                                        continue
+                                return ""
                             writer.writerow([
                                 nat.name,
                                 router.name,
@@ -48,8 +56,8 @@ def audit_nat(project_id):
                                 network,
                                 len(nat.nat_ips) if nat.nat_ips else 0,
                                 ", ".join(nat_ips),
-                                nat.min_ports_per_v_m,
-                                nat.max_ports_per_v_m if hasattr(nat, "max_ports_per_v_m") else "",
+                                get_nat_field(nat, 'min_ports_per_v_m', 'min_ports_per_vm', 'minPortsPerVm'),
+                                get_nat_field(nat, 'max_ports_per_v_m', 'max_ports_per_vm', 'maxPortsPerVm'),
                                 nat.enable_dynamic_port_allocation if hasattr(nat, "enable_dynamic_port_allocation") else "",
                                 nat.enable_endpoint_independent_mapping if hasattr(nat, "enable_endpoint_independent_mapping") else "",
                                 nat.enable_logging if hasattr(nat, "enable_logging") else "",

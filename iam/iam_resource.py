@@ -8,8 +8,10 @@ try:
     from googleapiclient import discovery
     import google.auth
 except ImportError:
-    print("❌ Error: Missing required libraries. Please run: pip install google-api-python-client google-auth")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-api-python-client google-auth')
+    from googleapiclient import discovery
+    import google.auth
 
 # Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"

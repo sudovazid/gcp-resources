@@ -7,8 +7,9 @@ from datetime import datetime
 try:
     from google.cloud import dataflow_v1beta3
 except ImportError:
-    print("Missing required library. Run: pip install google-cloud-dataflow-client")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-dataflow-client')
+    from google.cloud import dataflow_v1beta3
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"

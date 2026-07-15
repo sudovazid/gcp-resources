@@ -7,8 +7,9 @@ from datetime import datetime
 try:
     from google.cloud import secretmanager
 except ImportError:
-    print("❌ Error: Missing required library. Please run: pip install google-cloud-secret-manager")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-secret-manager')
+    from google.cloud import secretmanager
 
 # Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"

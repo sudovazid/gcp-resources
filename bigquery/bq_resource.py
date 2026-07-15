@@ -7,8 +7,9 @@ from datetime import datetime
 try:
     from google.cloud import bigquery
 except ImportError:
-    print("Missing required library. Run: pip install google-cloud-bigquery")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-bigquery')
+    from google.cloud import bigquery
 
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"

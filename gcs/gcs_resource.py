@@ -3,8 +3,14 @@ import sys
 import warnings
 import time
 import csv
-from google.cloud import monitoring_v3
-from google.cloud import storage
+try:
+    from google.cloud import monitoring_v3
+    from google.cloud import storage
+except ImportError:
+    from utils.install_helper import prompt_install
+    prompt_install('google-cloud-monitoring google-cloud-storage')
+    from google.cloud import monitoring_v3
+    from google.cloud import storage
 
 # 1. Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"

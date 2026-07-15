@@ -7,8 +7,10 @@ try:
     from googleapiclient import discovery
     import google.auth
 except ImportError:
-    print("❌ Error: Missing required libraries. Please run: pip install google-api-python-client google-auth")
-    sys.exit(1)
+    from utils.install_helper import prompt_install
+    prompt_install('google-api-python-client google-auth')
+    from googleapiclient import discovery
+    import google.auth
 
 # Silence the low-level gRPC C++ logs and Google Auth quota UserWarning
 os.environ["GRPC_VERBOSITY"] = "ERROR"
@@ -32,7 +34,6 @@ def audit_vertex(project_id):
         print(f"❌ Error initializing Vertex AI client: {e}")
         return
 
-    parent = f"projects/{project_id}/locations/-"
     endpoints_csv = f"{project_id}_vertex_endpoints_audit.csv"
     custom_jobs_csv = f"{project_id}_vertex_custom_jobs_audit.csv"
     datasets_csv = f"{project_id}_vertex_datasets_audit.csv"
@@ -41,6 +42,7 @@ def audit_vertex(project_id):
     print(f"\n[1/3] Scanning Vertex AI Endpoints...")
     endpoints_list = []
     try:
+        parent = f"projects/{project_id}/locations/global"
         request = client.projects().locations().endpoints().list(parent=parent)
         while request is not None:
             response = request.execute()
@@ -90,6 +92,7 @@ def audit_vertex(project_id):
     print(f"\n[2/3] Scanning Vertex AI Custom Training Jobs...")
     custom_jobs_list = []
     try:
+        parent = f"projects/{project_id}/locations/global"
         request = client.projects().locations().customJobs().list(parent=parent)
         while request is not None:
             response = request.execute()
@@ -124,14 +127,17 @@ def audit_vertex(project_id):
     # 3. SCAN DATASETS
     print(f"\n[3/3] Scanning Vertex AI Datasets...")
     datasets_list = []
-    try:
-        request = client.projects().locations().datasets().list(parent=parent)
-        while request is not None:
-            response = request.execute()
-            datasets_list.extend(response.get('datasets', []))
-            request = client.projects().locations().datasets().list_next(request, response)
-    except Exception as e:
-        print(f"⚠️ Error or access denied listing Datasets: {e}")
+    DATASET_REGIONS = ['us-central1', 'us-east1', 'us-west1', 'europe-west1', 'europe-west4', 'asia-east1', 'asia-northeast1']
+    for region in DATASET_REGIONS:
+        try:
+            parent = f"projects/{project_id}/locations/{region}"
+            request = client.projects().locations().datasets().list(parent=parent)
+            while request is not None:
+                response = request.execute()
+                datasets_list.extend(response.get('datasets', []))
+                request = client.projects().locations().datasets().list_next(request, response)
+        except Exception:
+            pass
 
     print(f"\n{'Dataset ID':<25} | {'Display Name':<25} | {'Location':<12} | {'Metadata Type'}")
     print("-" * 85)
