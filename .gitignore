@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+Icon?
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Generated audit output
+output/*.csv
+output/*.xlsx
+output/*.pdf
+output/*.html
+
+# Temp / upload artifacts
+.tmp.driveupload/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
