@@ -15,7 +15,7 @@ google-cloud-appengine-logging
 google-cloud-logging
 google-cloud-scheduler
 google-cloud-kms
-google-cloud-composer
+google-cloud-orchestration-airflow
 google-cloud-aiplatform
 google-cloud-resource-manager
 google-cloud-firestore

@@ -17,11 +17,20 @@ warnings.filterwarnings("ignore", module="google.auth._default")
 
 def audit_spanner(project_id):
     print(f"\nFetching Cloud Spanner Resources for project: {project_id}...")
-    client = spanner.Client(project=project_id)
+    try:
+        client = spanner.Client(project=project_id)
+        instances = list(client.list_instances())
+    except Exception as e:
+        err = str(e)
+        if "disabled" in err.lower() or "api has not been used" in err.lower():
+            print(f"⚠️  Cloud Spanner API is not enabled for this project.")
+            print(f"   💡 Enable it: gcloud services enable spanner.googleapis.com --project {project_id}")
+        else:
+            print(f"⚠️  Error accessing Cloud Spanner: {e}")
+        return
 
     # Instances
     inst_csv = f"{project_id}_spanner_instances_audit.csv"
-    instances = list(client.list_instances())
     with open(inst_csv, mode="w", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["Instance ID", "Display Name", "Configuration", "Node Count", "Processing Units", "State", "Create Time", "Update Time"])

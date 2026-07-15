@@ -1,6 +1,7 @@
 import csv
 import os
 import sys
+import time
 import warnings
 
 try:
@@ -22,10 +23,10 @@ def audit_artifact_registry(project_id):
     
     # ADDED: "us", "eu", "asia" multi-regions to catch gcr.io mapped repositories!
     regions = [
-        "global", "us", "eu", "asia", 
-        "us-central1", "us-east1", "us-east4", "us-west1", "us-west2", 
-        "europe-west1", "europe-west2", "europe-west4", 
-        "asia-east1", "asia-southeast1", "asia-northeast1"
+        "us", "eu", "asia",
+        "us-central1", "us-east1", "us-west1",
+        "europe-west1", "europe-west4",
+        "asia-east1", "asia-northeast1",
     ]
 
     print(f"\n{'Repository Name':<30} | {'Location':<13} | {'Format':<8} | {'Size (GB)':<9} | {'Cleanup'}")
@@ -58,11 +59,16 @@ def audit_artifact_registry(project_id):
                     repo_format = repo.format_.name if hasattr(repo.format_, 'name') else str(repo.format_)
                     repo_format = repo_format.replace('Format.', '')
 
-                    # Sum the sizes of all files in the repository
+                    # Sum the sizes of all files (max 20 files / 5s per repo)
                     size_bytes = 0
+                    file_count = 0
+                    scan_start = time.time()
                     try:
                         for file in client.list_files(parent=repo.name):
                             size_bytes += getattr(file, 'size_bytes', 0)
+                            file_count += 1
+                            if file_count >= 20 or (time.time() - scan_start) > 5:
+                                break
                     except Exception:
                         pass
                     size_gb = size_bytes / (1024**3)
